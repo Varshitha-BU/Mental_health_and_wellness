@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>CaregiverOS | Multiple Live Chat Rooms - Complete Caregiver Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            corePlugins: { preflight: true }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; }
+        .nav-btn { transition: all 0.2s; cursor: pointer; }
+        .nav-btn:hover { background-color: #1e3a5f; transform: translateY(-1px); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.25); }
+        .toast-notification { animation: slideIn 0.3s ease; position: fixed; bottom: 20px; right: 20px; z-index: 9999; background: #10b981; color: white; padding: 12px 24px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .toast-error { background: #ef4444; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .progress-bar { transition: width 0.5s ease; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .role-tag { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: bold; }
+        .role-caregiver { background: #10b981; color: white; }
+        .role-family { background: #f59e0b; color: white; }
+        .role-doctor { background: #3b82f6; color: white; }
+        .nearby-card { transition: all 0.2s; cursor: pointer; }
+        .nearby-card:hover { transform: translateX(5px); background: #e0e7ff; }
+        .online-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .online { background: #10b981; animation: pulse 1.5s infinite; }
+        .offline { background: #6b7280; }
+        .recording { background: #ef4444 !important; animation: pulse 0.5s infinite; }
+        input[type="range"] { width: 100%; margin: 8px 0; }
+        .live-badge { background: #10b981; animation: pulse 1.5s infinite; display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; }
+        .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 16px; padding: 16px; text-align: center; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .breathing-orb { width: 120px; height: 120px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; margin: 20px auto; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; transition: all 1s ease; cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .hero-image { background-image: url('https://images.pexels.com/photos/4101143/pexels-photo-4101143.jpeg?auto=compress&cs=tinysrgb&w=600'); background-size: cover; background-position: center; border-radius: 20px; height: 180px; }
+        .compassion-heart { animation: heartbeat 1.5s ease infinite; }
+        @keyframes heartbeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        .chat-room-btn { transition: all 0.2s; }
+        .chat-room-btn.active { background: #6366f1; color: white; }
+        .chat-room-btn:hover:not(.active) { background: #e0e7ff; }
+        .chat-message { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 min-h-screen">
+
+    <!-- LOGIN PAGE -->
+    <section id="loginPage" class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white/95 backdrop-blur-sm p-8 rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="text-center mb-6">
+                <div class="text-5xl mb-3">🧠⚡</div>
+                <h2 class="text-3xl font-bold text-indigo-800">CaregiverOS</h2>
+                <p class="text-gray-600 mt-2">AI-Powered Caregiver Support Platform</p>
+                <p class="text-xs text-green-600 mt-1">📍 Live Location | 🎤 Voice Detection | 📊 Analytics | 👨‍👩‍👧 Family | 💬 Multiple Chat Rooms</p>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Select Your Role:</label>
+                <div class="flex gap-2">
+                    <button onclick="selectRole('caregiver')" id="roleCaregiverBtn" class="flex-1 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold">👤 Caregiver</button>
+                    <button onclick="selectRole('family')" id="roleFamilyBtn" class="flex-1 py-2 rounded-lg bg-gray-300 text-gray-700 text-sm font-semibold">👨‍👩‍👧 Family</button>
+                    <button onclick="selectRole('doctor')" id="roleDoctorBtn" class="flex-1 py-2 rounded-lg bg-gray-300 text-gray-700 text-sm font-semibold">⚕️ Doctor</button>
+                </div>
+            </div>
+            
+            <input id="loginUser" type="text" placeholder="Username (min 8 chars)" class="border p-3 w-full mb-3 rounded-lg">
+            <input id="loginPass" type="password" placeholder="Password (min 8 chars, 1 number & special)" class="border p-3 w-full mb-4 rounded-lg">
+            
+            <button onclick="login()" class="bg-indigo-600 hover:bg-indigo-700 text-white w-full py-3 rounded-lg font-semibold">🚀 Access Live Dashboard →</button>
+            <p id="errorMsg" class="text-red-500 text-sm mt-3 text-center"></p>
+            <div class="mt-4 p-3 bg-gray-100 rounded-lg text-center">
+                <p class="text-xs font-semibold">Demo: caregiver1234 / Pass@1234</p>
+                <p class="text-xs text-blue-600 mt-1">📍 Allow location for nearby caregivers</p>
+                <p class="text-xs text-purple-600">🎤 Tap "Voice Distress" for analysis</p>
+                <p class="text-xs text-green-600">💬 Join multiple chat rooms for support</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- MAIN APP -->
+    <div id="mainApp" style="display: none;">
+        <header class="bg-gradient-to-r from-indigo-900 to-purple-900 text-white shadow-lg sticky top-0 z-40">
+            <div class="container mx-auto px-4 py-3">
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">🧠⚡</span>
+                        <h1 class="text-xl font-bold">CaregiverOS</h1>
+                        <span class="live-badge">🔴 LIVE</span>
+                        <span id="roleBadge" class="role-tag role-caregiver text-xs">Caregiver</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1">
+                        <button onclick="showTab('dashboard')" class="nav-btn px-3 py-1 rounded-lg text-sm">📊 Dashboard</button>
+                        <button onclick="showTab('input')" class="nav-btn px-3 py-1 rounded-lg text-sm">📝 Wellness</button>
+                        <button onclick="showTab('analytics')" class="nav-btn px-3 py-1 rounded-lg text-sm">📈 Analytics</button>
+                        <button onclick="showTab('family')" class="nav-btn px-3 py-1 rounded-lg text-sm">👨‍👩‍👧 Family</button>
+                        <button onclick="showTab('peer')" class="nav-btn px-3 py-1 rounded-lg text-sm bg-green-700">📍 Nearby</button>
+                        <button onclick="showTab('chat')" class="nav-btn px-3 py-1 rounded-lg text-sm">💬 Chat Rooms</button>
+                        <button onclick="showTab('legacy')" class="nav-btn px-3 py-1 rounded-lg text-sm">📸 Legacy</button>
+                        <button onclick="showTab('rescue')" class="nav-btn px-3 py-1 rounded-lg text-sm bg-red-600">🚨 Rescue</button>
+                        <span id="userDisplay" class="bg-indigo-700 px-2 py-1 rounded-lg text-xs">👤 User</span>
+                        <button onclick="logout()" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded-lg text-sm">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Smart Search Bar -->
+        <div class="container mx-auto px-4 py-2">
+            <div class="bg-white/10 backdrop-blur-md rounded-xl p-3 flex items-center gap-3 border border-indigo-400">
+                <i class="fas fa-search text-indigo-300"></i>
+                <input type="text" id="smartSearch" placeholder="🔍 Smart Search: burnout, crisis, meditation, breathing, family, peer, recovery, photo, voice..." class="bg-transparent border-none w-full text-white placeholder-indigo-300 outline-none text-sm">
+                <span class="text-xs text-indigo-300"><i class="fas fa-microchip"></i> AI Search</span>
+            </div>
+        </div>
+
+        <!-- Emergency Contact Bar -->
+        <div class="container mx-auto px-4 py-2">
+            <div class="bg-white/10 backdrop-blur-md rounded-xl p-3 flex flex-wrap items-center gap-3 border border-indigo-400">
+                <i class="fas fa-globe text-indigo-300"></i>
+                <span class="text-white text-sm font-semibold">Language:</span>
+                <select id="languageSelect" onchange="changeLanguage(this.value)" class="rounded-lg border border-indigo-300 bg-slate-900 text-white px-3 py-2 text-sm">
+                    <option value="en">English</option>
+                    <option value="hi">हिन्दी</option>
+                    <option value="kn">ಕನ್ನಡ</option>
+                    <option value="ta">தமிழ்</option>
+                </select>
+                <span class="text-xs text-indigo-300 ml-auto">Switch UI language</span>
+            </div>
+        </div>
+        <div class="container mx-auto px-4 py-2">
+            <div class="bg-yellow-500 rounded-xl p-2">
+                <div class="flex flex-wrap items-center gap-3">
+                    <span id="emergencyLabel" class="text-white text-sm font-semibold"><i class="fas fa-phone"></i> Emergency Contacts:</span>
+                    <input type="tel" id="emergencyContactInput" placeholder="+91XXXXXXXXXX" class="px-3 py-1 rounded-lg text-sm w-full md:w-48">
+                    <button onclick="savePhone()" id="addContactButton" class="bg-white text-yellow-600 px-3 py-1 rounded-lg text-sm font-semibold">Add Contact</button>
+                    <button onclick="sendFamilySOS()" id="sosButton" class="bg-red-500 text-white px-3 py-1 rounded-lg text-sm font-semibold"><i class="fas fa-sms"></i> SOS to All</button>
+                </div>
+                <div id="contactList" class="mt-3 flex flex-wrap gap-2"></div>
+            </div>
+        </div>
+
+        <div class="container mx-auto px-4 py-4">
+            
+            <!-- DASHBOARD TAB -->
+            <div id="dashboardTab" class="tab-content">
+                <div class="hero-image mb-6 flex items-end justify-start p-6 rounded-2xl shadow-xl" style="background-image: url('https://images.pexels.com/photos/4101143/pexels-photo-4101143.jpeg?auto=compress&cs=tinysrgb&w=600'); background-size: cover;">
+                    <div class="bg-black/50 p-3 rounded-xl">
+                        <p class="text-white text-sm">"You are doing an amazing job. Take a moment to breathe."</p>
+                    </div>
+                </div>
+                
+                <div class="grid md:grid-cols-4 gap-4 mb-6">
+                    <div class="stat-card"><p class="text-sm opacity-90">🔥 Burnout Risk</p><p class="text-3xl font-bold" id="liveBurnout">0%</p><p class="text-xs" id="burnoutStatus">Calculating...</p></div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"><p class="text-sm opacity-90">💚 Compassion</p><p class="text-3xl font-bold" id="liveCompassion">100%</p></div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"><p class="text-sm opacity-90">⚡ Crisis Risk</p><p class="text-3xl font-bold" id="liveCrisis">0%</p></div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);"><p class="text-sm opacity-90">🔋 Energy Level</p><p class="text-3xl font-bold" id="liveEnergy">100%</p></div>
+                </div>
+                
+                <div class="bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl shadow-xl p-6 mb-6 text-white text-center">
+                    <i class="fas fa-heart text-4xl compassion-heart mb-3"></i>
+                    <h3 class="text-xl font-bold">Daily Compassion Card</h3>
+                    <p id="compassionMessage" class="mt-2 text-lg">You have shown incredible strength today.</p>
+                    <p class="text-sm mt-2 opacity-90">💖 "Self-compassion is the greatest gift you can give yourself"</p>
+                </div>
+                
+                <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                    <h3 class="text-xl font-bold text-indigo-800 mb-3 text-center">🌬️ 3-Minute Breathing Exercise</h3>
+                    <p class="text-center text-gray-600 text-sm mb-3">Quick reset for stress relief</p>
+                    <div class="breathing-orb" id="breathingOrb" onclick="startBreathing()">🌬️ Tap to Start</div>
+                    <div id="breathingText" class="text-center text-gray-600 mt-3 font-semibold"></div>
+                    <div id="breathingTimer" class="text-center text-2xl font-bold text-indigo-600 mt-2"></div>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-5">
+                    <div class="bg-white rounded-2xl shadow-xl p-6">
+                        <h3 class="text-xl font-bold text-indigo-800 mb-3">🔥 Burnout Digital Twin</h3>
+                        <div class="mt-2"><div class="flex justify-between text-sm"><span>Burnout Risk</span><span id="burnoutPct" class="font-bold">0%</span></div><div class="bg-gray-200 rounded-full h-4 mt-1"><div id="burnoutBar" style="width:0%" class="h-full rounded-full bg-orange-500 progress-bar"></div></div></div>
+                        <div class="mt-3"><div class="flex justify-between text-sm"><span>Compassion Battery</span><span id="compassionPct">100%</span></div><div class="bg-gray-200 rounded-full h-4 mt-1"><div id="compassionBar" style="width:100%" class="h-full rounded-full bg-purple-500 progress-bar"></div></div></div>
+                        <div class="mt-3"><div class="flex justify-between text-sm"><span>Crisis Probability</span><span id="crisisProb">0%</span></div><div class="bg-gray-200 rounded-full h-4 mt-1"><div id="crisisBar" style="width:0%" class="h-full rounded-full bg-red-500 progress-bar"></div></div></div>
+                        <button onclick="rescueMode()" class="mt-5 w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-semibold">🆘 Activate Rescue Mode</button>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-xl p-6">
+                        <h3 class="text-xl font-bold text-indigo-800 mb-3">🎤 Voice Distress Detection</h3>
+                        <button id="voiceBtn" onclick="startVoiceDetection()" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg mt-2"><i class="fas fa-microphone"></i> 🎤 Tap to Speak</button>
+                        <div id="voiceResult" class="text-sm mt-4 text-center bg-gray-100 p-3 rounded-lg min-h-[70px]"></div>
+                        <button onclick="sendEmergencySMS()" class="mt-4 w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-semibold">📱 Send Emergency SMS</button>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-xl p-6 mt-5"><h3 class="font-bold text-indigo-800 mb-3">📊 Burnout Trend (Last 7 Days)</h3><canvas id="trendChart" height="80"></canvas></div>
+                <div class="bg-white rounded-2xl shadow-xl p-6 mt-5"><h3 class="font-bold text-indigo-800 mb-3">📋 Recent Health Insights</h3><div id="healthInsights" class="space-y-2"></div></div>
+            </div>
+
+            <!-- WELLNESS INPUT TAB -->
+            <div id="inputTab" class="tab-content">
+                <div class="bg-white rounded-2xl shadow-xl p-6">
+                    <h2 class="text-2xl font-bold text-indigo-800 mb-4">📝 Daily Wellness Assessment</h2>
+                    <div class="grid md:grid-cols-2 gap-5">
+                        <div><label class="font-semibold">😴 Sleep Hours (0-12)</label><input type="range" id="sleep" min="0" max="12" value="6" oninput="updateSleep()"><span id="sleepVal" class="font-bold text-indigo-600">6 hrs</span></div>
+                        <div><label class="font-semibold">⏰ Care Hours (0-18)</label><input type="range" id="care" min="0" max="18" value="8" oninput="updateCare()"><span id="careVal" class="font-bold text-indigo-600">8 hrs</span></div>
+                        <div><label class="font-semibold">😊 Mood Score (1-5)</label><input type="range" id="mood" min="1" max="5" value="3" oninput="updateMood()"><span id="moodVal" class="font-bold text-indigo-600">3 - Moderate</span></div>
+                        <div><label class="font-semibold">⚡ Stress Level (1-10)</label><input type="range" id="stress" min="1" max="10" value="7" oninput="updateStress()"><span id="stressVal" class="font-bold text-indigo-600">7 - High</span></div>
+                        <div><label class="font-semibold">👥 Social Interactions (0-20)</label><input type="range" id="social" min="0" max="20" value="3" oninput="updateSocial()"><span id="socialVal" class="font-bold text-indigo-600">3</span></div>
+                        <div><label class="font-semibold">🏃 Physical Activity (mins)</label><input type="range" id="physical" min="0" max="120" value="20" oninput="updatePhysical()"><span id="physicalVal" class="font-bold text-indigo-600">20 min</span></div>
+                    </div>
+                    <div class="flex gap-3 mt-5"><button onclick="calculateAndSaveBurnout()" class="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold"><i class="fas fa-save"></i> Save Today's Data</button><button onclick="loadTodayData()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold"><i class="fas fa-download"></i> Load Saved Data</button><button onclick="clearTodayData()" class="bg-gray-500 text-white px-6 py-2 rounded-lg font-semibold"><i class="fas fa-trash"></i> Clear</button></div>
+                    <div id="burnoutDisplay" class="mt-5 p-4 bg-gray-100 rounded-xl text-center font-bold"></div>
+                </div>
+            </div>
+
+            <!-- ANALYTICS TAB -->
+            <div id="analyticsTab" class="tab-content">
+                <div class="bg-white rounded-2xl shadow-xl p-6">
+                    <h2 class="text-2xl font-bold text-indigo-800 mb-4">📊 Advanced Analytics Dashboard</h2>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div><canvas id="burnoutHistoryChart" height="200"></canvas><p class="text-center text-sm mt-2">Burnout History (30 Days)</p></div>
+                        <div><canvas id="metricsRadarChart" height="200"></canvas><p class="text-center text-sm mt-2">Wellness Metrics Radar</p></div>
+                    </div>
+                    <div class="mt-6 grid md:grid-cols-3 gap-3">
+                        <div class="bg-gray-100 p-3 rounded-lg text-center"><p class="text-xs">Avg Sleep</p><p class="text-2xl font-bold text-indigo-600" id="avgSleep">0 hrs</p></div>
+                        <div class="bg-gray-100 p-3 rounded-lg text-center"><p class="text-xs">Avg Mood</p><p class="text-2xl font-bold text-green-600" id="avgMood">0/5</p></div>
+                        <div class="bg-gray-100 p-3 rounded-lg text-center"><p class="text-xs">Avg Stress</p><p class="text-2xl font-bold text-red-600" id="avgStress">0/10</p></div>
+                    </div>
+                    <button onclick="downloadAnalyticsPDF()" class="mt-4 bg-teal-600 text-white px-6 py-2 rounded-lg font-semibold w-full"><i class="fas fa-file-pdf"></i> Download Full Analytics Report (PDF)</button>
+                </div>
+            </div>
+
+            <!-- FAMILY TAB -->
+            <div id="familyTab" class="tab-content">
+                <div class="bg-white rounded-2xl shadow-xl p-6">
+                    <h2 class="text-2xl font-bold text-indigo-800 mb-4">👨‍👩‍👧 Family Responsibility Dashboard</h2>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div><h3 class="font-bold text-indigo-700 mb-3">Care Contribution Distribution</h3><div id="familyContributions" class="space-y-3"></div><button onclick="rebalanceFamily()" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg w-full">🤖 AI Family Negotiator</button></div>
+                        <div><h3 class="font-bold text-indigo-700 mb-3">Family Communication</h3><div id="familyMessages" class="h-60 overflow-y-auto bg-gray-50 rounded-lg p-3 mb-3"></div><div class="flex gap-2"><input type="text" id="familyMsgInput" placeholder="Send message to family..." class="flex-1 border rounded-lg p-2 text-sm"><button onclick="sendFamilyMessage()" class="bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm">Send</button></div></div>
+                    </div>
+                    <div class="mt-6 p-4 bg-yellow-50 rounded-lg"><h3 class="font-bold">🔄 Shift Handover Request</h3><button onclick="requestHandover()" class="mt-2 bg-orange-500 text-white px-4 py-2 rounded-lg">Request Handover</button><div id="handoverStatus" class="mt-2 text-sm text-green-600"></div></div>
+                    <div class="mt-4 p-4 bg-green-50 rounded-lg"><h3 class="font-bold">📊 Family Trust Score</h3><div class="bg-gray-200 rounded-full h-2 mt-2"><div id="trustFill" style="width:68%" class="h-full rounded-full bg-green-500"></div></div><p class="text-sm mt-1">Current Trust: 68%</p></div>
+                </div>
+            </div>
+
+            <!-- PEER SUPPORT TAB -->
+            <div id="peerTab" class="tab-content">
+                <div class="bg-white rounded-2xl shadow-xl p-6">
+                    <h2 class="text-2xl font-bold text-indigo-800 mb-4">📍 Find Caregivers Near You</h2>
+                    <div class="bg-blue-50 p-5 rounded-xl mb-4">
+                        <button onclick="getUserLocation()" id="locationButton" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold w-full"><i class="fas fa-location-dot"></i> 📍 Allow Location Access</button>
+                        <p id="locationStatus" class="text-sm text-gray-600 mt-3 text-center">Click above to find caregivers near you</p>
+                        <p id="coordDisplay" class="text-xs text-gray-400 text-center mt-1"></p>
+                        <div class="mt-4">
+                            <input type="text" id="manualLocation" placeholder="Enter city or area (e.g. Bangalore)" class="border border-gray-300 rounded-lg p-3 w-full text-sm">
+                            <button onclick="findNearbyCaregivers()" id="findNearbyButton" class="mt-3 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-semibold">🔎 Find Caregivers Near My Area</button>
+                        </div>
+                    </div>
+                    <h3 class="font-bold text-indigo-800 mb-3">👥 Caregivers Near You (<span id="caregiverCount">0</span>)</h3>
+                    <div id="nearbyList" class="space-y-3 max-h-96 overflow-y-auto mb-6"></div>
+                    <div class="border-t pt-4"><h3 class="font-bold text-indigo-800 mb-3">📢 Support Requests</h3><button onclick="broadcastHelp()" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm mb-3 w-full">📢 Broadcast SOS to Nearby</button><div id="requestsList" class="space-y-2 max-h-48 overflow-y-auto"></div></div>
+                </div>
+            </div>
+
+            <!-- MULTIPLE LIVE CHAT ROOMS TAB -->
+            <div id="chatTab" class="tab-content">
+                <div class="bg-white rounded-2xl shadow-xl p-6">
+                    <h2 class="text-2xl font-bold text-indigo-800 mb-4">💬 Multiple Live Chat Rooms</h2>
+                    
+                    <!-- Chat Room Selection Buttons -->
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <button onclick="switchChatRoom('general')" id="roomGeneralBtn" class="chat-room-btn active px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold">💬 General Support</button>
+                        <button onclick="switchChatRoom('anxiety')" id="roomAnxietyBtn" class="chat-room-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 text-sm font-semibold">😰 Anxiety Help</button>
+                        <button onclick="switchChatRoom('tips')" id="roomTipsBtn" class="chat-room-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 text-sm font-semibold">💡 Caregiver Tips</button>
+                        <button onclick="switchChatRoom('emergency')" id="roomEmergencyBtn" class="chat-room-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 text-sm font-semibold">🚨 Emergency Support</button>
+                    </div>
+                    
+                    <!-- Room Info -->
+                    <div class="mb-3 p-3 bg-indigo-50 rounded-lg">
+                        <p id="roomDescription" class="text-sm text-gray-600">💬 Connect with other caregivers, share experiences, and get support in a safe environment.</p>
+                    </div>
+                    
+                    <!-- Chat Messages Container -->
+                    <div id="chatMessages" class="h-80 overflow-y-auto bg-gray-50 rounded-xl p-4 mb-4 border"></div>
+                    
+                    <!-- Chat Input -->
+                    <div class="flex gap-2">
+                        <input type="text" id="chatInput" placeholder="Type your message (anonymous)..." class="flex-1 border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button onclick="sendMessage()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-semibold"><i class="fas fa-paper-plane"></i> Send</button>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-3">💡 Be kind and supportive. This is a safe space for all caregivers. Messages are anonymous.</p>
+                    
+                    <!-- Active Users Count -->
+                    <div class="mt-3 text-center text-xs text-gray-400">
+                        <i class="fas fa-users"></i> <span id="activeUsers">12</span> caregivers online across all rooms
+                    </div>
+                </div>
+            </div>
+
+            <!-- LEGACY VAULT TAB -->
+            <div id="legacyTab" class="tab-content">
+                <div class="bg-white rounded-2xl shadow-xl p-6">
+                    <h2 class="text-2xl font-bold text-indigo-800 mb-4">📸 Memory & Legacy Vault</h2>
+                    <div class="flex gap-3 mb-4">
+                        <button onclick="uploadPhoto()" class="bg-purple-600 text-white px-4 py-2 rounded-lg"><i class="fas fa-camera"></i> Upload Photo</button>
+                        <button onclick="addMemory()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg"><i class="fas fa-pen"></i> Add Text Memory</button>
+                        <button onclick="clearAllMemories()" class="bg-red-500 text-white px-4 py-2 rounded-lg"><i class="fas fa-trash"></i> Clear All</button>
+                    </div>
+                    <div id="memoryGrid" class="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-96 overflow-y-auto"></div>
+                    <div class="mt-6 p-4 bg-amber-50 rounded-lg"><h3 class="font-bold">📜 Legacy of Care</h3><p id="legacyQuote" class="text-sm italic">"Your dedication has touched countless lives."</p><p class="text-sm mt-2">Total Care Hours: <span id="totalCareHours">0</span> | Memories: <span id="memoryCount">0</span></p></div>
+                </div>
+            </div>
+
+            <!-- RESCUE TAB -->
+            <div id="rescueTab" class="tab-content">
+                <div class="bg-white rounded-2xl shadow-xl p-6 text-center">
+                    <h2 class="text-2xl font-bold text-red-600 mb-4">🚨 Emergency Rescue Center</h2>
+                    <div class="bg-red-50 p-4 rounded-lg mb-4"><p class="text-red-800 font-semibold">24/7 Crisis Support</p><p class="text-sm">Suicide & Crisis Lifeline: <strong class="text-xl">988</strong></p><p class="text-sm">Crisis Text Line: Text <strong>HOME</strong> to <strong>741741</strong></p></div>
+                    <button onclick="sendEmergencySMS()" class="bg-red-600 text-white w-full py-3 rounded-lg mb-3 font-semibold">Send Emergency SMS</button>
+                    <button onclick="callHelpline()" class="bg-purple-600 text-white w-full py-3 rounded-lg font-semibold">Call 988 Helpline</button>
+                    <button onclick="rescueMode()" class="mt-3 bg-orange-500 text-white w-full py-3 rounded-lg font-semibold">🆘 Emergency Rescue Mode</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============ STATE VARIABLES ============
+        let currentRole = "caregiver";
+        let burnout = 0, compassion = 100, crisisProb = 0;
+        let sleepH = 6, careH = 8, moodScore = 3, stressL = 7, socialI = 3, physicalM = 20;
+        let memories = [];
+        let familyMsgs = [];
+        let requests = [];
+        let userLat = null, userLng = null;
+        let savedPhone = localStorage.getItem("emergencyPhone") || "";
+        let emergencyContacts = JSON.parse(localStorage.getItem("emergencyContacts") || "[]");
+        let currentLanguage = localStorage.getItem("caregiverLanguage") || "en";
+        let chart = null, historyChart = null, radarChart = null;
+        let historyData = JSON.parse(localStorage.getItem("burnoutHistory")) || [];
+        let breathingInterval = null;
+        const translations = {
+            en: {
+                emergencyLabel: "Emergency Contacts:",
+                emergencyPlaceholder: "+91XXXXXXXXXX",
+                addContact: "Add Contact",
+                sosButton: "SOS to All",
+                locationAccess: "📍 Allow Location Access",
+                locationStatusPlaceholder: "Click above to find caregivers near you",
+                manualLocationPlaceholder: "Enter city or area (e.g. Bangalore)",
+                findNearby: "🔎 Find Caregivers Near My Area",
+                searchPlaceholder: "🔍 Smart Search: burnout, crisis, meditation, breathing, family, peer, recovery, photo, voice...",
+                saveToast: "Contact saved!",
+                saveError: "Enter valid number",
+                noContacts: "Save at least one contact first!",
+                allContactsToast: "SOS sent to saved contacts",
+                emergencyAlertToast: "Emergency alert sent!",
+                noSavedContactsLabel: "No contacts saved yet."
+            },
+            hi: {
+                emergencyLabel: "आपातकालीन संपर्क:",
+                emergencyPlaceholder: "+91XXXXXXXXXX",
+                addContact: "संपर्क जोड़ें",
+                sosButton: "सभी को SOS",
+                locationAccess: "📍 स्थान एक्सेस करें",
+                locationStatusPlaceholder: "अपने पास के देखभालकर्ताओं को खोजने के लिए ऊपर क्लिक करें",
+                manualLocationPlaceholder: "शहर या क्षेत्र दर्ज करें (जैसे बैंगलोर)",
+                findNearby: "🔎 अपने क्षेत्र में देखभालकर्ता खोजें",
+                searchPlaceholder: "🔍 स्मार्ट खोज: बर्नआउट, संकट, ध्यान, श्वास, परिवार, समर्थन...",
+                saveToast: "संपर्क सहेजा गया!",
+                saveError: "मान्य नंबर दर्ज करें",
+                noContacts: "पहला संपर्क सहेजें!",
+                allContactsToast: "सहेजे गए संपर्कों को SOS भेजा गया",
+                emergencyAlertToast: "आपातकालीन अलर्ट भेजा गया!",
+                noSavedContactsLabel: "अभी तक कोई संपर्क सहेजा नहीं गया।"
+            },
+            kn: {
+                emergencyLabel: "ತುರ್ತು ಸಂಪರ್ಕಗಳು:",
+                emergencyPlaceholder: "+91XXXXXXXXXX",
+                addContact: "ಸಂಪರ್ಕ ಸೇರಿಸಿ",
+                sosButton: "ಎಲ್ಲರಿಗೂ SOS",
+                locationAccess: "📍 ಸ್ಥಳ ಪ್ರವೇಶಿಸಿ",
+                locationStatusPlaceholder: "ನಿಮ್ಮ ಹತ್ತಿರದ ಸಂರಕ್ಷಕರನ್ನು ಕಂಡುಹಿಡಿಯಲು ಮೇಲ್ನೊಡಗೆ ಕ್ಲಿಕ್ ಮಾಡಿ",
+                manualLocationPlaceholder: "ನಗರ ಅಥವಾ ಪ್ರದೇಶ ನಮೂದಿಸಿ (ಉದಾ: ಬೆಂಗಳೂರು)",
+                findNearby: "🔎 ನನ್ನ ಪ್ರದೇಶದಲ್ಲಿ ರಕ್ಷಣಾಕರರನ್ನು ಕಂಡುಹಿಡಿಯಿರಿ",
+                searchPlaceholder: "🔍 ಸ್ಮಾರ್ಟ್ ಹುಡುಕಿ: ಒಣಗುವುದು, ಸಂಕಟ, ಧ್ಯಾನ, ಉಸಿರಾಟ, ಕುಟುಂಬ, ಬೆಂಬಲ...",
+                saveToast: "ಸಂಪರ್ಕ ಉಳಿಸಲಾಗಿದೆ!",
+                saveError: "ಮಾನ್ಯ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ",
+                noContacts: "ಕನಿಷ್ಠ ಒಂದು ಸಂಪರ್ಕವನ್ನು ಉಳಿಸಿ!",
+                allContactsToast: "ಉಳಿಸಿದ ಸಂಪರ್ಕಗಳಿಗೆ SOS ಕಳುಹಿಸಲಾಗಿದೆ",
+                emergencyAlertToast: "ತುರ್ತು ಎಚ್ಚರಿಕೆ ಕಳುಹಿಸಲಾಗಿದೆ!",
+                noSavedContactsLabel: "ಇನ್ನೂ ಯಾವುದೇ ಸಂಪರ್ಕ ಉಳಿಸಲಿಲ್ಲ."
+            },
+            ta: {
+                emergencyLabel: "அவசர தொடர்புகள்:",
+                emergencyPlaceholder: "+91XXXXXXXXXX",
+                addContact: "தொடர்பு சேர்க்கவும்",
+                sosButton: "எல்லாருக்கும் SOS",
+                locationAccess: "📍 இட அணுகல் பெறவும்",
+                locationStatusPlaceholder: "உங்கள் அருகிலுள்ள பராமரிப்பாளர்களை கண்டறிய மேலே சொடுக்கவும்",
+                manualLocationPlaceholder: "நகரம் அல்லது பகுதியை உள்ளிடவும் (எ.கா: பெங்களூரு)",
+                findNearby: "🔎 என் பகுதியில் பராமரிப்பாளர்களைக் கண்டறிக",
+                searchPlaceholder: "🔍 ஸ்மார்ட் தேடல்: ஒய்வு, সংকটে, தியானம், மூச்சு, குடும்பம், ஆதரவு...",
+                saveToast: "தொடர்பு சேமிக்கப்பட்டது!",
+                saveError: "தரமான எண்ணை உள்ளிடவும்",
+                noContacts: "முதல் தொடர்பைச் சேமிக்கவும்!",
+                allContactsToast: "சேமிக்கப்பட்ட தொடர்புகளுக்கு SOS அனுப்பியமை!",
+                emergencyAlertToast: "அவசர எச்சரிக்கை அனுப்பப்பட்டது!",
+                noSavedContactsLabel: "இன்னும் தொடர்புகள் சேமிக்கப்பட்டது இல்லை."
+            }
+        };
+        if(savedPhone && emergencyContacts.length === 0) {
+            emergencyContacts.push(savedPhone);
+            localStorage.setItem("emergencyContacts", JSON.stringify(emergencyContacts));
+        }
+        
+        // MULTIPLE CHAT ROOMS DATA
+        let chatRooms = {
+            general: { name: "General Support", description: "💬 Connect with other caregivers, share experiences, and get support in a safe environment.", messages: [], color: "indigo" },
+            anxiety: { name: "Anxiety Help", description: "😰 A safe space to discuss anxiety, stress, and coping strategies with others who understand.", messages: [], color: "green" },
+            tips: { name: "Caregiver Tips", description: "💡 Share and discover practical tips for caregiving, self-care, and daily challenges.", messages: [], color: "yellow" },
+            emergency: { name: "Emergency Support", description: "🚨 For urgent concerns. If you're in crisis, please call 988 immediately.", messages: [], color: "red" }
+        };
+        
+        let currentRoom = "general";
+        
+        // Load saved chat messages from localStorage
+        function loadChatMessages() {
+            for(let room in chatRooms) {
+                let saved = localStorage.getItem(`chat_room_${room}`);
+                if(saved) {
+                    chatRooms[room].messages = JSON.parse(saved);
+                } else {
+                    // Add welcome messages for each room
+                    let welcomeMsg = { user: "System", text: `Welcome to the ${chatRooms[room].name} room! Be kind and supportive.`, time: new Date().toLocaleTimeString(), system: true };
+                    chatRooms[room].messages = [welcomeMsg];
+                }
+            }
+        }
+        
+        function saveChatMessages() {
+            for(let room in chatRooms) {
+                localStorage.setItem(`chat_room_${room}`, JSON.stringify(chatRooms[room].messages.slice(0, 200)));
+            }
+        }
+        
+        function switchChatRoom(room) {
+            currentRoom = room;
+            
+            // Update button styles
+            document.querySelectorAll('.chat-room-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-indigo-600', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+            });
+            document.getElementById(`room${room.charAt(0).toUpperCase() + room.slice(1)}Btn`).classList.add('active', 'bg-indigo-600', 'text-white');
+            document.getElementById(`room${room.charAt(0).toUpperCase() + room.slice(1)}Btn`).classList.remove('bg-gray-200', 'text-gray-700');
+            
+            // Update room description
+            document.getElementById("roomDescription").innerHTML = chatRooms[room].description;
+            
+            // Render messages for this room
+            renderChatMessages();
+        }
+        
+        function sendMessage() {
+            let input = document.getElementById("chatInput");
+            let text = input.value.trim();
+            if(!text) return;
+            
+            let userName = localStorage.getItem("caregiver_user") || "Anonymous Caregiver";
+            let displayName = userName.substring(0, 12);
+            
+            chatRooms[currentRoom].messages.push({
+                user: displayName,
+                text: text,
+                time: new Date().toLocaleTimeString(),
+                system: false
+            });
+            
+            saveChatMessages();
+            input.value = "";
+            renderChatMessages();
+            showToast(`Message sent to ${chatRooms[currentRoom].name} room!`);
+            
+            // Auto-scroll to bottom
+            let container = document.getElementById("chatMessages");
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function renderChatMessages() {
+            let messages = chatRooms[currentRoom].messages;
+            let html = messages.slice(-100).map(m => `
+                <div class="chat-message ${m.system ? 'bg-indigo-50 border-l-4 border-indigo-400' : 'bg-gray-100'} rounded-lg p-2 mb-2">
+                    <span class="font-semibold ${m.system ? 'text-indigo-600' : 'text-indigo-600'}">${m.user}:</span> 
+                    <span>${m.text}</span>
+                    <span class="text-xs text-gray-400 float-right">${m.time}</span>
+                </div>
+            `).join('');
+            
+            document.getElementById("chatMessages").innerHTML = html || '<div class="text-center text-gray-500">No messages yet. Be the first to share!</div>';
+            
+            // Auto-scroll
+            let container = document.getElementById("chatMessages");
+            if(container) container.scrollTop = container.scrollHeight;
+        }
+        
+        // Load saved memories
+        let savedMemories = localStorage.getItem("caregiverMemories");
+        if(savedMemories) memories = JSON.parse(savedMemories);
+        
+        // Breathing Exercise Function
+        function startBreathing() {
+            const orb = document.getElementById("breathingOrb");
+            const textDiv = document.getElementById("breathingText");
+            const timerDiv = document.getElementById("breathingTimer");
+            
+            if(breathingInterval) clearInterval(breathingInterval);
+            
+            let seconds = 180;
+            let breathStep = 0;
+            
+            const steps = [
+                { text: "😤 INHALE... 4 seconds", size: "160px" },
+                { text: "⏸️ HOLD... 4 seconds", size: "160px" },
+                { text: "😮‍💨 EXHALE... 6 seconds", size: "80px" },
+                { text: "⏸️ HOLD... 2 seconds", size: "80px" }
+            ];
+            
+            function updateTimer() {
+                let mins = Math.floor(seconds / 60);
+                let secs = seconds % 60;
+                timerDiv.innerHTML = `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')} remaining`;
+                seconds--;
+                if(seconds < 0) {
+                    clearInterval(timerInterval);
+                    clearInterval(breathInterval);
+                    textDiv.innerHTML = "✅ Breathing exercise complete! You're doing great.";
+                    orb.style.width = "120px";
+                    orb.style.height = "120px";
+                    timerDiv.innerHTML = "";
+                }
+            }
+            
+            function updateBreath() {
+                const step = steps[breathStep % steps.length];
+                orb.style.width = step.size;
+                orb.style.height = step.size;
+                textDiv.innerHTML = step.text;
+                breathStep++;
+            }
+            
+            updateBreath();
+            let breathInterval = setInterval(updateBreath, 4000);
+            let timerInterval = setInterval(updateTimer, 1000);
+            
+            setTimeout(() => {
+                clearInterval(breathInterval);
+                clearInterval(timerInterval);
+                if(seconds > 0) {
+                    textDiv.innerHTML = "✅ Breathing exercise complete! Feel the calm.";
+                    orb.style.width = "120px";
+                    orb.style.height = "120px";
+                    timerDiv.innerHTML = "";
+                }
+            }, 180000);
+            
+            showToast("🌬️ Starting 3-minute breathing exercise. Breathe deeply.");
+        }
+        
+        function updateCompassionMessage() {
+            const messages = [
+                "You are making a difference every single day. 💖",
+                "Your care and love matter more than words can say. 🌟",
+                "Remember to take care of yourself too. You matter! 💕",
+                "Every small act of kindness creates ripples of love. 🌊",
+                "You are stronger than you know and braver than you believe. 🦋"
+            ];
+            const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+            document.getElementById("compassionMessage").innerHTML = randomMsg;
+        }
+        
+        const caregivers = [
+            { name: "Priya Sharma", type: "Dementia Care", online: true, lat: 12.9716, lng: 77.5946 },
+            { name: "Rajesh Kumar", type: "Elderly Care", online: true, lat: 12.9780, lng: 77.6000 },
+            { name: "Anita Singh", type: "Alzheimer's", online: true, lat: 12.9650, lng: 77.5880 },
+            { name: "Meera Desai", type: "Special Needs", online: false, lat: 12.9850, lng: 77.6100 },
+            { name: "Vikram Mehta", type: "Palliative Care", online: true, lat: 12.9600, lng: 77.5800 }
+        ];
+        
+        function calculateBurnoutValue() {
+            let rawBurnout = (careH * 4.5) + ((8 - Math.min(8, sleepH)) * 7) + ((5 - moodScore) * 12) + (stressL * 3.5) - (socialI * 1.2) - (physicalM / 12);
+            burnout = Math.min(98, Math.max(5, Math.floor(rawBurnout)));
+            compassion = Math.min(100, Math.max(5, 100 - burnout));
+            crisisProb = Math.min(95, Math.floor(burnout * 0.85 + stressL * 2.5));
+            let energy = Math.min(100, Math.max(10, 100 - burnout - stressL * 2));
+            
+            document.getElementById("burnoutPct").innerHTML = burnout + "%";
+            document.getElementById("burnoutBar").style.width = burnout + "%";
+            document.getElementById("compassionPct").innerHTML = compassion + "%";
+            document.getElementById("compassionBar").style.width = compassion + "%";
+            document.getElementById("crisisProb").innerHTML = crisisProb + "%";
+            document.getElementById("crisisBar").style.width = crisisProb + "%";
+            document.getElementById("liveBurnout").innerHTML = burnout + "%";
+            document.getElementById("liveCompassion").innerHTML = compassion + "%";
+            document.getElementById("liveCrisis").innerHTML = crisisProb + "%";
+            document.getElementById("liveEnergy").innerHTML = energy + "%";
+            
+            let riskLevel = burnout >= 80 ? "🔴 CRITICAL" : burnout >= 60 ? "🟠 HIGH" : burnout >= 40 ? "🟡 MODERATE" : "🟢 LOW";
+            document.getElementById("burnoutStatus").innerHTML = riskLevel;
+            document.getElementById("burnoutDisplay").innerHTML = `<span class="text-xl font-bold">🔥 Burnout Score: ${burnout}%</span><br>${riskLevel}`;
+            
+            updateChart();
+            updateInsights();
+            updateAnalytics();
+            updateCompassionMessage();
+        }
+        
+        function updateChart() {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            if(chart) chart.destroy();
+            let last7Days = historyData.slice(-7).map(d => d.burnout);
+            while(last7Days.length < 7) last7Days.unshift(null);
+            chart = new Chart(ctx, { type: 'line', data: { labels: ['Day1', 'Day2', 'Day3', 'Day4', 'Day5', 'Day6', 'Today'], datasets: [{ label: 'Burnout %', data: last7Days.map((v,i) => i===6 ? burnout : v), borderColor: '#f97316', tension: 0.3, fill: false }] } });
+        }
+        
+        function updateInsights() {
+            let insights = [];
+            if(sleepH < 6) insights.push("⚠️ Low sleep detected. Aim for 7-8 hours.");
+            if(careH > 12) insights.push("⚠️ High care hours. Schedule a break.");
+            if(stressL > 8) insights.push("⚠️ High stress level. Practice deep breathing.");
+            if(insights.length === 0) insights.push("✅ All metrics look good! Keep maintaining healthy habits.");
+            document.getElementById("healthInsights").innerHTML = insights.map(i => `<div class="p-2 bg-gray-50 rounded-lg">${i}</div>`).join('');
+        }
+        
+        function updateAnalytics() {
+            let avgSleep = historyData.reduce((s,d)=>s+d.sleep,0)/(historyData.length||1);
+            let avgMood = historyData.reduce((s,d)=>s+d.mood,0)/(historyData.length||1);
+            let avgStress = historyData.reduce((s,d)=>s+d.stress,0)/(historyData.length||1);
+            document.getElementById("avgSleep").innerHTML = avgSleep.toFixed(1)+" hrs";
+            document.getElementById("avgMood").innerHTML = avgMood.toFixed(1)+"/5";
+            document.getElementById("avgStress").innerHTML = avgStress.toFixed(1)+"/10";
+            
+            if(historyChart) historyChart.destroy();
+            let histCtx = document.getElementById('burnoutHistoryChart').getContext('2d');
+            let last30 = historyData.slice(-30).map(d=>d.burnout);
+            historyChart = new Chart(histCtx, { type: 'line', data: { labels: last30.map((_,i)=>i+1), datasets: [{ label: 'Burnout Trend', data: last30, borderColor: '#f97316', fill: false }] } });
+            
+            if(radarChart) radarChart.destroy();
+            let radarCtx = document.getElementById('metricsRadarChart').getContext('2d');
+            radarChart = new Chart(radarCtx, { type: 'radar', data: { labels: ['Sleep', 'Care', 'Mood', 'Stress', 'Social', 'Activity'], datasets: [{ label: 'Current Metrics', data: [sleepH/12*100, careH/18*100, moodScore/5*100, stressL/10*100, socialI/20*100, physicalM/120*100], backgroundColor: 'rgba(99,102,241,0.2)', borderColor: '#6366f1' }] } });
+        }
+        
+        function calculateAndSaveBurnout() {
+            calculateBurnoutValue();
+            let today = new Date().toISOString().split('T')[0];
+            let existingIndex = historyData.findIndex(h => h.date === today);
+            let newEntry = { date: today, sleep: sleepH, care: careH, mood: moodScore, stress: stressL, social: socialI, physical: physicalM, burnout: burnout };
+            if(existingIndex >= 0) historyData[existingIndex] = newEntry;
+            else historyData.push(newEntry);
+            localStorage.setItem("burnoutHistory", JSON.stringify(historyData));
+            localStorage.setItem("lastInputs", JSON.stringify({sleepH, careH, moodScore, stressL, socialI, physicalM}));
+            showToast("✅ Data saved! Burnout: " + burnout + "%");
+            updateAnalytics();
+        }
+        
+        function loadTodayData() {
+            let saved = localStorage.getItem("lastInputs");
+            if(saved) {
+                let d = JSON.parse(saved);
+                document.getElementById("sleep").value = d.sleepH;
+                document.getElementById("care").value = d.careH;
+                document.getElementById("mood").value = d.moodScore;
+                document.getElementById("stress").value = d.stressL;
+                document.getElementById("social").value = d.socialI;
+                document.getElementById("physical").value = d.physicalM;
+                updateSleep(); updateCare(); updateMood(); updateStress(); updateSocial(); updatePhysical();
+                showToast("Loaded saved data");
+            } else showToast("No saved data found", "error");
+        }
+        
+        function clearTodayData() {
+            if(confirm("Clear today's data?")) {
+                localStorage.removeItem("lastInputs");
+                document.getElementById("sleep").value = 6;
+                document.getElementById("care").value = 8;
+                document.getElementById("mood").value = 3;
+                document.getElementById("stress").value = 7;
+                document.getElementById("social").value = 3;
+                document.getElementById("physical").value = 20;
+                updateSleep(); updateCare(); updateMood(); updateStress(); updateSocial(); updatePhysical();
+                showToast("Data cleared", "info");
+            }
+        }
+        
+        function downloadAnalyticsPDF() {
+            let avgSleep = historyData.reduce((s,d)=>s+d.sleep,0)/(historyData.length||1);
+            let avgMood = historyData.reduce((s,d)=>s+d.mood,0)/(historyData.length||1);
+            let content = `
+                <div style="padding:20px; font-family:Arial;">
+                    <h2 style="color:#4f46e5;">CaregiverOS Health Report</h2>
+                    <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+                    <hr>
+                    <p><strong>🔥 Burnout Score:</strong> ${burnout}%</p>
+                    <p><strong>💚 Compassion Battery:</strong> ${compassion}%</p>
+                    <p><strong>⚡ Crisis Risk:</strong> ${crisisProb}%</p>
+                    <p><strong>😴 Average Sleep:</strong> ${avgSleep.toFixed(1)} hrs</p>
+                    <p><strong>😊 Average Mood:</strong> ${avgMood.toFixed(1)}/5</p>
+                    <p><strong>📊 Total Days Tracked:</strong> ${historyData.length}</p>
+                    <hr>
+                    <p><strong>Recommendations:</strong> ${burnout>=60?"Take immediate break and seek support.":"Maintain healthy habits and continue self-care."}</p>
+                    <p><small>Generated by CaregiverOS - Your AI Caregiver Companion</small></p>
+                </div>
+            `;
+            const element = document.createElement('div');
+            element.innerHTML = content;
+            html2pdf().from(element).set({ margin: 1, filename: `CaregiverOS_Report_${new Date().toISOString().split('T')[0]}.pdf` }).save();
+            showToast("PDF downloaded successfully!");
+        }
+        
+        // MEMORY FUNCTIONS
+        function renderMemoryVault() {
+            let html = memories.slice(0,12).map((m, idx) => `
+                <div class="bg-gray-100 rounded-lg p-2 text-center border hover:shadow-lg transition">
+                    ${m.type === 'photo' ? `<img src="${m.data}" class="w-full h-28 object-cover rounded mb-1" onerror="this.style.display='none'">` : `<i class="fas fa-quote-left text-indigo-500 text-2xl"></i>`}
+                    <p class="text-xs mt-1 truncate">${m.caption.substring(0,40)}</p>
+                    <small class="text-gray-400 text-[10px]">${m.date}</small>
+                    <button onclick="deleteMemory(${idx})" class="text-red-500 text-xs mt-1 block w-full">Delete</button>
+                </div>
+            `).join('');
+            document.getElementById("memoryGrid").innerHTML = html || '<p class="text-gray-500 col-span-3 text-center">No memories yet. Add a photo or memory!</p>';
+            document.getElementById("memoryCount").innerHTML = memories.length;
+            let totalHours = historyData.reduce((s,d)=>s+d.care,0);
+            document.getElementById("totalCareHours").innerHTML = totalHours;
+        }
+        
+        function uploadPhoto() {
+            let input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function(e) {
+                let file = e.target.files[0];
+                if(file && file.type.startsWith('image/')) {
+                    let reader = new FileReader();
+                    reader.onload = function(ev) {
+                        memories.unshift({
+                            type: 'photo',
+                            data: ev.target.result,
+                            caption: file.name,
+                            date: new Date().toLocaleString()
+                        });
+                        localStorage.setItem("caregiverMemories", JSON.stringify(memories));
+                        renderMemoryVault();
+                        showToast("📸 Photo uploaded to memory vault!");
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    showToast("Please select a valid image file", "error");
+                }
+            };
+            input.click();
+        }
+        
+        function addMemory() {
+            let text = prompt("Share a memory or story:");
+            if(text && text.trim()) {
+                memories.unshift({
+                    type: 'text',
+                    caption: text,
+                    date: new Date().toLocaleString()
+                });
+                localStorage.setItem("caregiverMemories", JSON.stringify(memories));
+                renderMemoryVault();
+                showToast("💭 Memory saved to vault!");
+            }
+        }
+        
+        function deleteMemory(index) {
+            if(confirm("Delete this memory?")) {
+                memories.splice(index, 1);
+                localStorage.setItem("caregiverMemories", JSON.stringify(memories));
+                renderMemoryVault();
+                showToast("Memory deleted");
+            }
+        }
+        
+        function clearAllMemories() {
+            if(confirm("Delete ALL memories? This cannot be undone.")) {
+                memories = [];
+                localStorage.setItem("caregiverMemories", JSON.stringify(memories));
+                renderMemoryVault();
+                showToast("All memories cleared");
+            }
+        }
+        
+        // FAMILY FUNCTIONS
+        function renderFamily() {
+            let contributions = [{ name: "You (Primary)", percent: 78 }, { name: "Sarah (Sister)", percent: 12 }, { name: "Michael (Brother)", percent: 10 }];
+            document.getElementById("familyContributions").innerHTML = contributions.map(c => `<div class="flex justify-between items-center"><span>${c.name}</span><div class="flex-1 mx-3 bg-gray-200 rounded-full h-2"><div style="width:${c.percent}%" class="bg-indigo-500 h-2 rounded-full"></div></div><span class="font-bold">${c.percent}%</span></div>`).join('');
+            document.getElementById("familyMessages").innerHTML = familyMsgs.slice(0,20).map(m => `<div class="p-2 border-b"><span class="font-semibold text-indigo-600">${m.sender}:</span> ${m.text}<span class="text-xs text-gray-400 float-right">${m.time}</span></div>`).join('') || '<p class="text-gray-500 text-center">No messages yet</p>';
+        }
+        
+        function sendFamilyMessage() {
+            let txt = document.getElementById("familyMsgInput").value.trim();
+            if(txt) {
+                familyMsgs.unshift({ sender: localStorage.getItem("caregiver_user") || "You", text: txt, time: new Date().toLocaleTimeString() });
+                document.getElementById("familyMsgInput").value = "";
+                renderFamily();
+                showToast("Message sent to family!");
+            }
+        }
+        
+        function rebalanceFamily() { showToast("AI Family Negotiator: Suggested new distribution 60%/25%/15%"); }
+        function requestHandover() { document.getElementById("handoverStatus").innerHTML = "✅ Handover request sent to family!"; showToast("Handover requested"); }
+        
+        // LOCATION FUNCTIONS
+        function getUserLocation() {
+            if(!navigator.geolocation) {
+                document.getElementById("locationStatus").innerHTML = "⚠️ Geolocation not supported by this browser.";
+                document.getElementById("coordDisplay").innerHTML = "";
+                return;
+            }
+            document.getElementById("locationStatus").innerHTML = "📍 Getting location... Please allow permission.";
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    userLat = pos.coords.latitude;
+                    userLng = pos.coords.longitude;
+                    document.getElementById("locationStatus").innerHTML = "✅ Location detected! Finding nearby caregivers...";
+                    document.getElementById("coordDisplay").innerHTML = `📍 ${userLat.toFixed(4)}, ${userLng.toFixed(4)}`;
+                    findNearbyCaregivers();
+                    showToast("Location detected! Found caregivers near you.");
+                },
+                (err) => {
+                    let message = err.code === 1 ? "⚠️ Permission denied. Showing default nearby caregivers." : "⚠️ Unable to get location. Showing default nearby caregivers.";
+                    document.getElementById("locationStatus").innerHTML = message;
+                    document.getElementById("coordDisplay").innerHTML = "📍 Default: Bengaluru";
+                    userLat = 12.9716;
+                    userLng = 77.5946;
+                    findNearbyCaregivers();
+                    showToast(message, "error");
+                },
+                { timeout: 15000 }
+            );
+        }
+        
+        function findNearbyCaregivers() {
+            if(userLat === null || userLng === null) {
+                const manual = document.getElementById("manualLocation").value.trim().toLowerCase();
+                if(manual.includes("bangalore") || manual.includes("bengaluru")) {
+                    userLat = 12.9716; userLng = 77.5946;
+                } else if(manual.includes("mumbai")) {
+                    userLat = 19.0760; userLng = 72.8777;
+                } else if(manual.includes("delhi")) {
+                    userLat = 28.6139; userLng = 77.2090;
+                } else if(manual.includes("chennai")) {
+                    userLat = 13.0827; userLng = 80.2707;
+                } else if(manual.includes("hyderabad")) {
+                    userLat = 17.3850; userLng = 78.4867;
+                } else if(manual.includes("coimbatore")) {
+                    userLat = 11.0168; userLng = 76.9558;
+                } else if(manual.includes("pune")) {
+                    userLat = 18.5204; userLng = 73.8567;
+                }
+                if(userLat === null || userLng === null) {
+                    userLat = 12.9716;
+                    userLng = 77.5946;
+                    document.getElementById("locationStatus").innerHTML = "⚠️ Unable to get exact location. Showing caregivers near Bengaluru by default.";
+                    document.getElementById("coordDisplay").innerHTML = "📍 Default: Bengaluru";
+                } else {
+                    document.getElementById("coordDisplay").innerHTML = manual ? `📍 ${manual}` : "";
+                    document.getElementById("locationStatus").innerHTML = "✅ Using manual location. Finding nearby caregivers...";
+                }
+            }
+            let nearby = caregivers.map(c => {
+                let dist = Math.sqrt(Math.pow((userLat-c.lat)*111,2) + Math.pow((userLng-c.lng)*85,2)).toFixed(1);
+                return { ...c, distance: dist };
+            }).filter(c => c.distance <= 10).sort((a,b)=>a.distance-b.distance);
+            document.getElementById("caregiverCount").innerHTML = nearby.length;
+            if(nearby.length === 0) {
+                document.getElementById("nearbyList").innerHTML = '<div class="text-center py-8">No caregivers within 10km</div>';
+                return;
+            }
+            document.getElementById("nearbyList").innerHTML = nearby.map(c => `<div class="nearby-card bg-white rounded-xl p-3 flex justify-between border-l-4 ${c.online?'border-green-500':'border-gray-400'}"><div><span class="online-dot ${c.online?'online':'offline'}"></span><span class="font-semibold">${c.name}</span><p class="text-xs">${c.type}</p><p class="text-xs text-green-600">📍 ${c.distance} km</p></div><button onclick="connectWith('${c.name}')" class="bg-indigo-500 text-white px-3 py-1 rounded text-xs">Connect</button></div>`).join('');
+        }
+        
+        function connectWith(name) { showToast(`Request sent to ${name}`); addRequest(`Request sent to ${name}`); }
+        function broadcastHelp() { addRequest(`🚨 SOS broadcast at ${new Date().toLocaleTimeString()}`); showToast("SOS broadcasted!"); }
+        function addRequest(msg) { requests.unshift({ text: msg, time: new Date().toLocaleTimeString() }); renderRequests(); }
+        function renderRequests() { document.getElementById("requestsList").innerHTML = requests.slice(0,10).map(r => `<div class="bg-yellow-50 p-2 rounded border-l-4 border-yellow-400"><p class="text-sm">${r.text}</p><small>${r.time}</small></div>`).join('') || '<div class="text-center">No requests</div>'; }
+        
+        // VOICE DETECTION
+        function startVoiceDetection() {
+            const voiceBtn = document.getElementById("voiceBtn");
+            const resultDiv = document.getElementById("voiceResult");
+            if (!('webkitSpeechRecognition' in window)) { resultDiv.innerHTML = "❌ Voice not supported. Use Chrome."; return; }
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = 'en-US';
+            voiceBtn.classList.add('recording');
+            voiceBtn.innerHTML = '<i class="fas fa-microphone"></i> 🎙️ Listening...';
+            resultDiv.innerHTML = "🎤 Listening... Please speak clearly";
+            recognition.start();
+            recognition.onresult = (event) => {
+                let transcript = event.results[0][0].transcript.toLowerCase();
+                let distress = transcript.includes('tired') || transcript.includes('stress') ? 75 : 35;
+                resultDiv.innerHTML = `📊 "${transcript}"<br>Distress Level: ${distress}% - ${distress > 70 ? "⚠️ High distress! Use Rescue Mode." : "Monitor wellbeing."}`;
+                voiceBtn.classList.remove('recording');
+                voiceBtn.innerHTML = '<i class="fas fa-microphone"></i> 🎤 Tap to Speak';
+            };
+            recognition.onerror = () => { resultDiv.innerHTML = "⚠️ Voice error. Try again."; voiceBtn.classList.remove('recording'); voiceBtn.innerHTML = '<i class="fas fa-microphone"></i> 🎤 Tap to Speak'; };
+        }
+        
+        // SOS & EMERGENCY
+        function sendFamilySOS() {
+            if(emergencyContacts.length === 0) { showToast(translations[currentLanguage].noContacts, "error"); return; }
+            alert(`📱 SOS SMS to ${emergencyContacts.join(", ")}:\n\nFAMILY SOS\nBurnout: ${burnout}%\nNeed immediate support!`);
+            showToast(translations[currentLanguage].allContactsToast);
+        }
+        
+        function sendEmergencySMS() {
+            if(emergencyContacts.length === 0) { showToast(translations[currentLanguage].noContacts, "error"); return; }
+            alert(`📱 EMERGENCY SMS to ${emergencyContacts.join(", ")}:\n\nBurnout: ${burnout}%\nCrisis Risk: ${crisisProb}%\nPlease check on me immediately.`);
+            showToast(translations[currentLanguage].emergencyAlertToast);
+        }
+        
+        function callHelpline() { window.location.href = "tel:988"; showToast("Calling helpline..."); }
+        function rescueMode() { burnout = Math.max(15, burnout - 35); compassion = Math.min(100, compassion + 25); crisisProb = Math.max(20, crisisProb - 30); calculateBurnoutValue(); showToast("🆘 Rescue Mode Activated! Burnout reduced."); }
+        
+        // INPUT HANDLERS
+        function updateSleep() { sleepH=parseFloat(document.getElementById("sleep").value); document.getElementById("sleepVal").innerHTML=sleepH+" hrs"; calculateBurnoutValue(); }
+        function updateCare() { careH=parseFloat(document.getElementById("care").value); document.getElementById("careVal").innerHTML=careH+" hrs"; calculateBurnoutValue(); }
+        function updateMood() { moodScore=parseInt(document.getElementById("mood").value); let moods={1:"Very Low",2:"Low",3:"Moderate",4:"Good",5:"Excellent"}; document.getElementById("moodVal").innerHTML=moodScore+" - "+moods[moodScore]; calculateBurnoutValue(); }
+        function updateStress() { stressL=parseInt(document.getElementById("stress").value); let levels={1:"Very Low",2:"Low",3:"Mild",4:"Moderate",5:"Moderate+",6:"High",7:"High+",8:"Very High",9:"Severe",10:"Critical"}; document.getElementById("stressVal").innerHTML=stressL+" - "+(levels[stressL]||"High"); calculateBurnoutValue(); }
+        function updateSocial() { socialI=parseInt(document.getElementById("social").value); document.getElementById("socialVal").innerHTML=socialI; calculateBurnoutValue(); }
+        function updatePhysical() { physicalM=parseInt(document.getElementById("physical").value); document.getElementById("physicalVal").innerHTML=physicalM+" min"; calculateBurnoutValue(); }
+        
+        function savePhone() {
+            let phone = document.getElementById("emergencyContactInput").value.trim();
+            if(phone.length >= 10) {
+                if(!emergencyContacts.includes(phone)) {
+                    emergencyContacts.push(phone);
+                    localStorage.setItem("emergencyContacts", JSON.stringify(emergencyContacts));
+                }
+                document.getElementById("emergencyContactInput").value = "";
+                renderContactList();
+                showToast(translations[currentLanguage].saveToast);
+            } else {
+                showToast(translations[currentLanguage].saveError, "error");
+            }
+        }
+
+        function renderContactList() {
+            const list = document.getElementById("contactList");
+            if(!list) return;
+            if(emergencyContacts.length === 0) {
+                const t = translations[currentLanguage] || translations.en;
+                list.innerHTML = `<span class="text-white text-sm">${t.noSavedContactsLabel}</span>`;
+                return;
+            }
+            list.innerHTML = emergencyContacts.map((phone, index) => `
+                <div class="bg-white/10 border border-white/20 rounded-full px-3 py-1 text-sm flex items-center gap-2">
+                    <span>${phone}</span>
+                    <button onclick="removeEmergencyContact(${index})" class="text-red-300 hover:text-white">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function removeEmergencyContact(index) {
+            emergencyContacts.splice(index, 1);
+            localStorage.setItem("emergencyContacts", JSON.stringify(emergencyContacts));
+            renderContactList();
+        }
+
+        function changeLanguage(lang) {
+            if(!translations[lang]) return;
+            currentLanguage = lang;
+            localStorage.setItem("caregiverLanguage", lang);
+            applyTranslations();
+        }
+
+        function applyTranslations() {
+            const t = translations[currentLanguage] || translations.en;
+            document.getElementById("emergencyLabel").innerText = t.emergencyLabel;
+            document.getElementById("emergencyContactInput").placeholder = t.emergencyPlaceholder;
+            document.getElementById("addContactButton").innerText = t.addContact;
+            document.getElementById("sosButton").innerHTML = `<i class="fas fa-sms"></i> ${t.sosButton}`;
+            document.getElementById("locationButton").innerHTML = `<i class="fas fa-location-dot"></i> ${t.locationAccess}`;
+            document.getElementById("locationStatus").innerText = t.locationStatusPlaceholder;
+            document.getElementById("manualLocation").placeholder = t.manualLocationPlaceholder;
+            document.getElementById("findNearbyButton").innerText = t.findNearby;
+            document.getElementById("smartSearch").placeholder = t.searchPlaceholder;
+            document.getElementById("languageSelect").value = currentLanguage;
+        }
+
+        function selectRole(r) { 
+            currentRole=r; 
+            document.getElementById('roleCaregiverBtn').className=`flex-1 py-2 rounded-lg text-sm font-semibold ${r==='caregiver'?'bg-indigo-600 text-white':'bg-gray-300 text-gray-700'}`;
+            document.getElementById('roleFamilyBtn').className=`flex-1 py-2 rounded-lg text-sm font-semibold ${r==='family'?'bg-indigo-600 text-white':'bg-gray-300 text-gray-700'}`;
+            document.getElementById('roleDoctorBtn').className=`flex-1 py-2 rounded-lg text-sm font-semibold ${r==='doctor'?'bg-indigo-600 text-white':'bg-gray-300 text-gray-700'}`;
+        }
+        
+        // SMART SEARCH FUNCTION
+        document.getElementById("smartSearch")?.addEventListener("input", function(e) {
+            let term = e.target.value.toLowerCase();
+            document.querySelectorAll(".card-hover, .bg-white, .stat-card, .bg-gradient-to-r, .rounded-2xl").forEach(el => {
+                if(term === "" || el.innerText.toLowerCase().includes(term)) el.style.display = "";
+                else el.style.display = "none";
+            });
+        });
+        
+        function login() {
+            let u=document.getElementById("loginUser").value.trim(), p=document.getElementById("loginPass").value;
+            if(u.length<8||p.length<8||!/[0-9]/.test(p)||!/[!@#$%^&*]/.test(p)){ document.getElementById("errorMsg").innerText="Invalid! Use caregiver1234 / Pass@1234"; return; }
+            localStorage.setItem("caregiver_user",u);
+            document.getElementById("userDisplay").innerHTML=`👤 ${u}`;
+            document.getElementById("roleBadge").innerHTML=currentRole==='caregiver'?'Caregiver':(currentRole==='family'?'Family':'Doctor');
+            document.getElementById("loginPage").style.display="none";
+            document.getElementById("mainApp").style.display="block";
+            renderMemoryVault(); renderRequests(); renderFamily(); loadTodayData(); calculateBurnoutValue();
+            loadChatMessages();
+            renderChatMessages();
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('active'));
+            showTab('dashboard');
+            showToast("Welcome to CaregiverOS Live Dashboard! Join the chat rooms to connect with others.");
+        }
+        
+        function logout() { localStorage.removeItem("caregiver_user"); document.getElementById("mainApp").style.display="none"; document.getElementById("loginPage").style.display="flex"; showToast("Logged out"); }
+        
+        function showTab(tab) { 
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); 
+            document.getElementById(`${tab}Tab`).classList.add('active'); 
+            if(tab==='family') renderFamily(); 
+            if(tab==='analytics') updateAnalytics(); 
+            if(tab==='legacy') renderMemoryVault(); 
+            if(tab==='chat') { renderChatMessages(); document.getElementById("chatInput").focus(); }
+        }
+        
+        function showToast(msg, type="success") { 
+            let toast = document.createElement("div"); 
+            toast.className = `toast-notification ${type==="error" ? "toast-error" : ""}`; 
+            toast.innerText = msg; 
+            document.body.appendChild(toast); 
+            setTimeout(() => toast.remove(), 3000); 
+        }
+        
+        applyTranslations();
+        renderContactList();
+        if(localStorage.getItem("caregiver_user")) {
+            document.getElementById("loginPage").style.display = "none";
+            document.getElementById("mainApp").style.display = "block";
+            document.getElementById("userDisplay").innerHTML = `👤 ${localStorage.getItem("caregiver_user")}`;
+            renderMemoryVault(); renderRequests(); renderFamily(); loadTodayData(); calculateBurnoutValue();
+            loadChatMessages();
+            renderChatMessages();
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('active'));
+            showTab('dashboard');
+        }
+    </script>
+</body>
+</html>
